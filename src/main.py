@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
 from peft import OFTConfig, get_peft_model, TaskType
-from trl import SFTTrainer
+from trl import SFTConfig, SFTTrainer
 
 # 1. Configuration
 model_id = "Qwen/Qwen2.5-1.5B-Instruct" # Fits the 1-1.5B constraint
@@ -53,7 +53,7 @@ dataset = dataset.map(format_prompts)
 train_dataset = dataset.select(range(5000))
 
 # 5. Training Arguments (Save logs for your report's loss curves)
-training_args = TrainingArguments(
+training_args = SFTConfig(
     output_dir=output_dir,
     per_device_train_batch_size=4,
     gradient_accumulation_steps=4,
@@ -63,7 +63,9 @@ training_args = TrainingArguments(
     save_steps=50,
     optim="adamw_torch",
     bf16=True,              # Use bf16 if your GPU supports it (Ampere or newer)
-    report_to="none"        # Or set to "wandb" to easily export loss curves
+    report_to="none",        # Or set to "wandb" to easily export loss curves
+    dataset_text_field="text",
+    # max_seq_length=512,      # Truncate context for memory efficiency
 )
 
 # 6. Initialize SFTTrainer
@@ -71,8 +73,6 @@ trainer = SFTTrainer(
     model=model,
     train_dataset=train_dataset,
     args=training_args,
-    dataset_text_field="text",
-    max_seq_length=512,      # Truncate context for memory efficiency
 )
 
 # 7. Pre-Finetuning Qualitative Test (For your report)
