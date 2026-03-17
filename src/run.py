@@ -2,15 +2,21 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 from util import *
+from datasets import load_dataset
 
 # --- 1. Settings ---
 base_model_id = "Qwen/Qwen2.5-1.5B-Instruct"
 adapter_path = "./qwen-oft-rust/final_model"  # Path where your trainer saved the model
+dataset_id = "Etherll/CodeFIM-Rust-Mellum"
+
+print("Loading dataset...")
+dataset = load_dataset(dataset_id, split="train") \
+  .map(format_prompts_from_dataset_input) \
+  .shuffle(seed=114514)
 
 # Test prompts (replace with your own Rust coding questions)
 test_prompts = [
-    format_prompts_str("factorial.rs", "fn calculate_factorial(n: u64) -> u64 {", "}"),
-    format_prompts_str("user.rs", "struct User {\n    username: String,\n    age: u8,\n}\nimpl User {\n", "}"),
+    dataset[20000]["text"], dataset[20001]["text"],
 ]
 
 # --- 2. Load Tokenizer and Base Model ---
@@ -31,7 +37,7 @@ def generate_code(model, tokenizer, prompt):
         # Adjust max_new_tokens if you want longer/shorter code snippets
         outputs = model.generate(
             **inputs, 
-            max_new_tokens=100,
+            max_new_tokens=128,
             pad_token_id=tokenizer.eos_token_id
         )
     return tokenizer.decode(outputs[0], skip_special_tokens=True)

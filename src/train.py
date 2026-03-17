@@ -38,26 +38,28 @@ model.print_trainable_parameters()
 
 # 4. Load and Format Dataset
 print("Loading dataset...")
-dataset = load_dataset(dataset_id, split="train")
-
-dataset = dataset.map(format_prompts_from_dataset)
+dataset = load_dataset(dataset_id, split="train") \
+  .map(format_prompts_from_dataset) \
+  .shuffle(seed=114514)
 
 # Take a small subset for quick prototyping (remove this for full training)
-train_dataset = dataset.select(range(5000))
+train_dataset = dataset.select(range(40000))
 
 # 5. Training Arguments (Save logs for your report's loss curves)
 training_args = SFTConfig(
     output_dir=output_dir,
-    per_device_train_batch_size=4,
+    per_device_train_batch_size=8,
     gradient_accumulation_steps=4,
     learning_rate=2e-4,
-    logging_steps=10,
-    max_steps=200,          # Increase for actual final training run
-    save_steps=50,
+    logging_steps=50,
+    num_train_epochs=2,
+    # max_steps=200,          # Increase for actual final training run
+    # save_steps=50,
     optim="adamw_torch",
     bf16=True,              # Use bf16 if your GPU supports it (Ampere or newer)
     report_to="none",        # Or set to "wandb" to easily export loss curves
     dataset_text_field="text",
+    save_total_limit=1,
     # max_seq_length=512,      # Truncate context for memory efficiency
 )
 
@@ -78,7 +80,7 @@ print(tokenizer.decode(pre_outputs[0], skip_special_tokens=True))
 
 # 8. Train the model
 print("\nStarting OFT training...")
-train_result = trainer.train()
+train_result = trainer.train(resume_from_checkpoint=True)
 
 # 9. Extract and Plot Training Loss (Deliverable requirement)
 print("\nPlotting training loss curve...")
