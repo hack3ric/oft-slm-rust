@@ -4,6 +4,7 @@ from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
 from peft import OFTConfig, get_peft_model, TaskType
 from trl import SFTConfig, SFTTrainer
+from util import *
 
 # 1. Configuration
 model_id = "Qwen/Qwen2.5-1.5B-Instruct" # Fits the 1-1.5B constraint
@@ -39,15 +40,7 @@ model.print_trainable_parameters()
 print("Loading dataset...")
 dataset = load_dataset(dataset_id, split="train")
 
-# Since FIM (Fill-in-the-Middle) datasets often have 'prefix', 'middle', 'suffix' columns,
-# this function creates standard causal language modeling text sequences.
-# Adjust the column names if your dataset structure differs.
-def format_prompts(example):
-    # Standard format combining context and the missing Rust code
-    text = f"// Context:\n{example.get('prefix', '')}\n// Complete the code:\n{example.get('middle', '')}\n{example.get('suffix', '')}"
-    return {"text": text}
-
-dataset = dataset.map(format_prompts)
+dataset = dataset.map(format_prompts_from_dataset)
 
 # Take a small subset for quick prototyping (remove this for full training)
 train_dataset = dataset.select(range(5000))
@@ -77,7 +70,7 @@ trainer = SFTTrainer(
 
 # 7. Pre-Finetuning Qualitative Test (For your report)
 print("\n--- BEFORE FINETUNING ---")
-test_prompt = "// Context:\nfn main() {\n// Complete the code:\n"
+test_prompt = format_prompts_str("main.rs", "fn main() {", "}")
 inputs = tokenizer(test_prompt, return_tensors="pt").to(model.device)
 with torch.no_grad():
     pre_outputs = model.generate(**inputs, max_new_tokens=30)

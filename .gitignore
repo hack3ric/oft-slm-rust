@@ -1,1 +1,3 @@
 venv/
+*-oft-rust/
+__pycache__/
