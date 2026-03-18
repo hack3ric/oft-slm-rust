@@ -1,8 +1,31 @@
+import json
+import os
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 from util import *
 from datasets import load_dataset
+
+
+# Helper function to generate code
+def fill_in_middle(model, tokenizer, file_name, prefix, suffix):
+    prompt = format_prompts_str(file_name, prefix, suffix)
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    inputs_len = inputs.input_ids.shape[-1]
+    with torch.no_grad():
+        # Adjust max_new_tokens if you want longer/shorter code snippets
+        outputs = model.generate(
+            **inputs, max_new_tokens=256, pad_token_id=tokenizer.eos_token_id
+        )
+    return tokenizer.decode(outputs[0, inputs_len:], skip_special_tokens=True)
+
+
+def print_fim(file_name, prefix, middle, suffix):
+    print("```")
+    print(f"// {file_name}\n")
+    print(f"{prefix}\033[33m{middle}\033[0m\n{suffix}")
+    print("```")
+
 
 # --- 1. Settings ---
 base_model_id = "Qwen/Qwen2.5-1.5B-Instruct"
@@ -10,17 +33,11 @@ adapter_path = "./qwen-oft-rust/final_model"  # Path where your trainer saved th
 dataset_id = "Etherll/CodeFIM-Rust-Mellum"
 
 print("Loading dataset...")
-dataset = (
-    load_dataset(dataset_id, split="train")
-    .map(format_prompts_from_dataset_input)
-    .shuffle(seed=114514)
-)
+dataset = load_dataset(dataset_id, split="train").shuffle(seed=114514)
 
 # Test prompts (replace with your own Rust coding questions)
-test_prompts = [
-    dataset[50000]["text"],
-    dataset[50001]["text"],
-]
+test_dataset = [x for x in dataset][50000:]
+results = [None] * len(test_dataset)
 
 # --- 2. Load Tokenizer and Base Model ---
 print("Loading base model...")
@@ -31,29 +48,24 @@ base_model = AutoModelForCausalLM.from_pretrained(
     base_model_id, torch_dtype=torch.bfloat16, device_map="auto"
 )
 
-
-# Helper function to generate code
-def generate_code(model, tokenizer, prompt):
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    with torch.no_grad():
-        # Adjust max_new_tokens if you want longer/shorter code snippets
-        outputs = model.generate(
-            **inputs, max_new_tokens=128, pad_token_id=tokenizer.eos_token_id
-        )
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
-
+os.makedirs("results", exist_ok=True)
 
 # --- 3. Generate Responses from BASE Model ---
-print("\n" + "=" * 50)
-print("             BASE MODEL RESPONSES")
-print("=" * 50)
-
-base_responses = []
-for i, prompt in enumerate(test_prompts):
-    result = generate_code(base_model, tokenizer, prompt)
-    base_responses.append(result)
-    print(f"\n--- Prompt {i+1} ---")
-    print(result)
+for i, data in enumerate(test_dataset):
+    file_name = data.get("file_name", "")
+    prefix = data.get("prefix", "")
+    suffix = data.get("suffix", "")
+    middle = fill_in_middle(base_model, tokenizer, file_name, prefix, suffix)
+    results[i] = {
+        "file_name": file_name,
+        "prefix": prefix,
+        "suffix": suffix,
+        "middle_base": middle,
+    }
+    with open("results/base.jsonl", "a") as file:
+        json.dump(results[i], file)
+        file.write("\n")
+    print(f"base: {i+1}/{len(test_dataset)} done")
 
 # --- 4. Load the Finetuned Weights (Adapters) ---
 print("\nLoading PEFT adapters...")
@@ -61,13 +73,13 @@ print("\nLoading PEFT adapters...")
 finetuned_model = PeftModel.from_pretrained(base_model, adapter_path)
 
 # --- 5. Generate Responses from FINETUNED Model ---
-print("\n" + "=" * 50)
-print("           FINETUNED MODEL RESPONSES")
-print("=" * 50)
-
-finetuned_responses = []
-for i, prompt in enumerate(test_prompts):
-    result = generate_code(finetuned_model, tokenizer, prompt)
-    finetuned_responses.append(result)
-    print(f"\n--- Prompt {i+1} ---")
-    print(result)
+for i, data in enumerate(test_dataset):
+    file_name = results[i]["file_name"]
+    prefix = results[i]["prefix"]
+    suffix = results[i]["suffix"]
+    middle = fill_in_middle(finetuned_model, tokenizer, file_name, prefix, suffix)
+    results[i]["middle_finetuned"] = middle
+    with open("results/finetuned.jsonl", "a") as file:
+        json.dump({"middle_finetuned": middle}, file)
+        file.write("\n")
+    print(f"finetuned: {i+1}/{len(test_dataset)} done")
