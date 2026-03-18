@@ -7,7 +7,7 @@ from trl import SFTConfig, SFTTrainer
 from util import *
 
 # 1. Configuration
-model_id = "Qwen/Qwen2.5-1.5B-Instruct" # Fits the 1-1.5B constraint
+model_id = "Qwen/Qwen2.5-1.5B-Instruct"  # Fits the 1-1.5B constraint
 dataset_id = "Etherll/CodeFIM-Rust-Mellum"
 output_dir = "./qwen-oft-rust"
 
@@ -15,20 +15,26 @@ output_dir = "./qwen-oft-rust"
 print("Loading model and tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 # Qwen doesn't have a default pad token, so we set it to eos_token
-tokenizer.pad_token = tokenizer.eos_token 
+tokenizer.pad_token = tokenizer.eos_token
 
 model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    torch_dtype=torch.bfloat16,
-    device_map="auto"
+    model_id, torch_dtype=torch.bfloat16, device_map="auto"
 )
 
 # 3. Setup Orthogonal Finetuning (OFT)
 # Targeting the attention and MLP linear layers for Qwen models
 oft_config = OFTConfig(
-    r=8, 
+    r=8,
     oft_block_size=0,
-    target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+    target_modules=[
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    ],
     module_dropout=0.0,
     task_type=TaskType.CAUSAL_LM,
 )
@@ -38,9 +44,11 @@ model.print_trainable_parameters()
 
 # 4. Load and Format Dataset
 print("Loading dataset...")
-dataset = load_dataset(dataset_id, split="train") \
-  .map(format_prompts_from_dataset) \
-  .shuffle(seed=114514)
+dataset = (
+    load_dataset(dataset_id, split="train")
+    .map(format_prompts_from_dataset)
+    .shuffle(seed=114514)
+)
 
 # Take a small subset for quick prototyping (remove this for full training)
 train_dataset = dataset.select(range(40000))
@@ -56,8 +64,8 @@ training_args = SFTConfig(
     # max_steps=200,          # Increase for actual final training run
     # save_steps=50,
     optim="adamw_torch",
-    bf16=True,              # Use bf16 if your GPU supports it (Ampere or newer)
-    report_to="none",        # Or set to "wandb" to easily export loss curves
+    bf16=True,  # Use bf16 if your GPU supports it (Ampere or newer)
+    report_to="none",  # Or set to "wandb" to easily export loss curves
     dataset_text_field="text",
     save_total_limit=1,
     # max_seq_length=512,      # Truncate context for memory efficiency
@@ -80,7 +88,8 @@ print(tokenizer.decode(pre_outputs[0], skip_special_tokens=True))
 
 # 8. Train the model
 print("\nStarting OFT training...")
-train_result = trainer.train(resume_from_checkpoint=True)
+# train_result = trainer.train(resume_from_checkpoint=True)
+train_result = trainer.train()
 
 # 9. Extract and Plot Training Loss (Deliverable requirement)
 print("\nPlotting training loss curve...")
