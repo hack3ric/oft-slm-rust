@@ -24,7 +24,7 @@ def format_prompts_str(file_name, prefix, suffix, middle=""):
 
 
 def print_fim(file_name, prefix, middle, suffix):
-    print("```")
+    # print("```")
     print(f"// {file_name}\n")
     print(f"{prefix}\033[33m{middle}\033[0m\n{suffix}")
-    print("```")
+    # print("```")
