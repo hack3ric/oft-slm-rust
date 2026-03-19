@@ -1,3 +1,9 @@
+model_id = "Qwen/Qwen2.5-1.5B-Instruct"
+adapter_path = "./qwen-oft-rust/final_model"  # Path where your trainer saved the model
+dataset_id = "Etherll/CodeFIM-Rust-Mellum"
+output_dir = "./qwen-oft-rust"
+
+
 def format_prompts_from_dataset(example):
     return {
         "text": format_prompts_str(

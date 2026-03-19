@@ -1,14 +1,10 @@
 import torch
 import matplotlib.pyplot as plt
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import OFTConfig, get_peft_model, TaskType
 from trl import SFTConfig, SFTTrainer
 from util import *
-
-model_id = "Qwen/Qwen2.5-1.5B-Instruct"
-dataset_id = "Etherll/CodeFIM-Rust-Mellum"
-output_dir = "./qwen-oft-rust"
 
 if __name__ == "__main__":
     print("Loading model and tokenizer...")

@@ -20,11 +20,6 @@ def fill_in_middle(model, tokenizer, file_name, prefix, suffix):
     return tokenizer.decode(outputs[0, inputs_len:], skip_special_tokens=True)
 
 
-# --- 1. Settings ---
-base_model_id = "Qwen/Qwen2.5-1.5B-Instruct"
-adapter_path = "./qwen-oft-rust/final_model"  # Path where your trainer saved the model
-dataset_id = "Etherll/CodeFIM-Rust-Mellum"
-
 if __name__ == "__main__":
     print("Loading dataset...")
     dataset = load_dataset(dataset_id, split="train").shuffle(seed=114514)
@@ -32,11 +27,11 @@ if __name__ == "__main__":
     results = [None] * len(test_dataset)
 
     print("Loading base model...")
-    tokenizer = AutoTokenizer.from_pretrained(base_model_id)
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.pad_token = tokenizer.eos_token
 
     base_model = AutoModelForCausalLM.from_pretrained(
-        base_model_id, torch_dtype=torch.bfloat16, device_map="auto"
+        model_id, torch_dtype=torch.bfloat16, device_map="auto"
     )
 
     os.makedirs("results", exist_ok=True)
@@ -50,6 +45,7 @@ if __name__ == "__main__":
             "file_name": file_name,
             "prefix": prefix,
             "suffix": suffix,
+            "middle_ground": data.get("middle", ""),
             "middle_base": middle,
         }
         with open("results/base.jsonl", "a") as file:
