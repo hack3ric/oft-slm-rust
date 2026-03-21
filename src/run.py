@@ -7,13 +7,11 @@ from util import *
 from datasets import load_dataset
 
 
-# Helper function to generate code
 def fill_in_middle(model, tokenizer, file_name, prefix, suffix):
     prompt = format_prompts_str(file_name, prefix, suffix)
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     inputs_len = inputs.input_ids.shape[-1]
     with torch.no_grad():
-        # Adjust max_new_tokens if you want longer/shorter code snippets
         outputs = model.generate(
             **inputs, max_new_tokens=256, pad_token_id=tokenizer.eos_token_id
         )
@@ -54,7 +52,6 @@ if __name__ == "__main__":
         print(f"base: {i+1}/{len(test_dataset)} done")
 
     print("\nLoading PEFT adapters...")
-    # This attaches your tiny OFT weights onto the base model
     finetuned_model = PeftModel.from_pretrained(base_model, adapter_path)
 
     for i, data in enumerate(test_dataset):

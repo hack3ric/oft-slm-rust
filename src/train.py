@@ -55,11 +55,11 @@ if __name__ == "__main__":
         # max_steps=200,          # Increase for actual final training run
         # save_steps=50,
         optim="adamw_torch",
-        bf16=True,  # Use bf16 if your GPU supports it (Ampere or newer)
-        report_to="none",  # Or set to "wandb" to easily export loss curves
+        bf16=True,
+        report_to="none",
         dataset_text_field="text",
         save_total_limit=1,
-        # max_seq_length=512,      # Truncate context for memory efficiency
+        # max_seq_length=512,
     )
 
     trainer = SFTTrainer(

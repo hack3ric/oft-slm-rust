@@ -14,10 +14,8 @@ parser = Parser(RUST_LANGUAGE)
 
 
 def is_valid_rust_syntax(code: str) -> bool:
-    # 2. Parse the generated code
     tree = parser.parse(bytes(code, "utf8"))
 
-    # 3. Check for any syntax errors in the parsed tree
     has_error = False
 
     def traverse(node):
