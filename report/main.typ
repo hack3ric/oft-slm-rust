@@ -1,8 +1,10 @@
+#show link: underline
+
 = AIST5030 Mini-Project Report
 
 == Introduction
 
-In the mini-project, we finetuned a Small Language Model (SLM) to complete Fill-in-the-Middle (FIM) tasks resource-efficiently specifically for Rust, a modern, memory-safe programming language, using the parameter-efficient Orthogonal Finetuning (OFT) method.
+In the mini-project, we finetuned a Small Language Model (SLM) to complete Fill-in-the-Middle (FIM) tasks resource-efficiently specifically for Rust, a modern, memory-safe programming language, using the parameter-efficient Orthogonal Finetuning (OFT) method. The source code of this mini-project is located at #link("https://github.com/hack3ric/oft-slm-rust").
 
 == Methodology
 
