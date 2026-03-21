@@ -51,9 +51,11 @@ Rank r=8, target modules: attention and MLP layers, Learning Rate: 2e-4, 2 epoch
 
 === Setup
 
-1 RTX 6000 Ada for training. The training time is \~4.5 hours. 40,000 items are used for training, \~7,000 for evaluation
+1 RTX 6000 Ada for training. Dataset is split into 40,000 training items and \~6,920 evaluation items.
 
 === Training
+
+The training time is \~4.5 hours.
 
 #figure(caption: "Loss curve")[
   #image("images/loss_curve.png", width: 50%)
